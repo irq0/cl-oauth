@@ -9,10 +9,10 @@
                              (normalize-uri uri))
                        "&" (url-encode
                              (alist->query-string parameters
-                                                  :url-encode t
+                                                  :url-encode nil
                                                   :include-leading-ampersand nil))))
 
-(declaim (notinline hmac-key)) ; we want to trace this when debugging. 
+(declaim (notinline hmac-key)) ; we want to trace this when debugging.
 (defun hmac-key (consumer-secret &optional token-secret)
   "9.2"
   (concatenate 'string (url-encode consumer-secret) "&" (url-encode (or token-secret ""))))
@@ -23,4 +23,3 @@
     (if url-encode-p
       (url-encode base64)
       base64)))
-
