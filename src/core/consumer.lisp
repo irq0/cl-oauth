@@ -39,14 +39,37 @@ it has query params already they are added onto it."
       (loop :repeat size
          :do (write (read-byte in) :stream out :pretty nil :base 36)))))
 
+
+(defparameter *nonce-characters* "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+(defun generate-nonce-urandom (&optional (size 30))
+  (let ((charsl (length *nonce-characters*)))
+     (with-open-file (in "/dev/urandom"
+			 :direction :input
+			 :element-type '(unsigned-byte 8))
+       (loop
+	  repeat size
+	  collect (schar *nonce-characters*
+			 (mod (read-byte in) charsl))
+	  into col
+	  finally (return (coerce col 'string))))))
+
+(defun generate-nonce-buildin (&optional (size 30))
+  (let ((charsl (length *nonce-characters*)))
+    (loop
+       repeat size
+       collect (schar *nonce-characters*
+		      (random charsl))
+       into col
+       finally (return (coerce col 'string)))))
+
 (defun generate-auth-parameters
     (consumer signature-method timestamp version &optional token)
   (let ((parameters `(("oauth_consumer_key" . ,(token-key consumer))
                       ("oauth_signature_method" . ,(string signature-method))
                       ("oauth_timestamp" . ,(princ-to-string timestamp))
-                      #+unix ("oauth_nonce" . ,(generate-nonce))
-                      #-unix ("oauth_nonce" . ,(princ-to-string
-                                                (random most-positive-fixnum)))
+                      #+unix ("oauth_nonce" . ,(generate-nonce-urandom))
+                      #-unix ("oauth_nonce" . ,(generate-nonce-buildin))
                       ("oauth_version" . ,(princ-to-string version)))))
     (if token
         (cons `("oauth_token" . ,(url-decode (token-key token))) parameters)
